@@ -3,39 +3,30 @@ import pandas as pd
 import numpy as np
 
 # --------------------------------------------------
-# PAGE CONFIG (must be at the top)
+# PAGE CONFIG
 # --------------------------------------------------
 st.set_page_config(
-    page_title="Streamlit Demo App",
+    page_title="Streamlit Data Explorer",
     page_icon="📊",
     layout="wide"
 )
 
-# --------------------------------------------------
-# TITLE & DESCRIPTION
-# --------------------------------------------------
 st.title("📊 Streamlit Data Explorer")
-st.write(
-    """
-    This is a simple Streamlit app that allows you to upload a CSV file,
-    explore the data, and view basic statistics.
-    """
-)
+st.write("Upload a CSV or Excel file to explore the data.")
 
 # --------------------------------------------------
 # SIDEBAR
 # --------------------------------------------------
 st.sidebar.header("App Controls")
-
 show_raw_data = st.sidebar.checkbox("Show raw data", value=True)
 show_summary = st.sidebar.checkbox("Show summary statistics", value=True)
 
 # --------------------------------------------------
-# FILE UPLOAD
+# FILE UPLOADER (CSV + EXCEL)
 # --------------------------------------------------
 uploaded_file = st.file_uploader(
-    "Upload a CSV file",
-    type=["csv"]
+    "Upload a CSV or Excel file",
+    type=["csv", "xlsx"]
 )
 
 # --------------------------------------------------
@@ -43,48 +34,46 @@ uploaded_file = st.file_uploader(
 # --------------------------------------------------
 if uploaded_file is not None:
     try:
-        # Read CSV
-        df = pd.read_csv(uploaded_file)
+        # Detect file type
+        file_name = uploaded_file.name
+
+        if file_name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+
+        elif file_name.endswith(".xlsx"):
+            df = pd.read_excel(uploaded_file)
+
+        else:
+            st.error("Unsupported file format")
+            st.stop()
 
         st.success("File uploaded successfully ✅")
 
-        # Show raw data
         if show_raw_data:
             st.subheader("📄 Raw Data")
             st.dataframe(df)
 
-        # Show summary
         if show_summary:
             st.subheader("📈 Summary Statistics")
             st.write(df.describe(include="all"))
 
-        # Column selection
         st.subheader("🔍 Column Analysis")
-        column = st.selectbox(
-            "Select a column to analyze",
-            df.columns
-        )
+        column = st.selectbox("Select a column", df.columns)
 
         if pd.api.types.is_numeric_dtype(df[column]):
-            st.write("**Mean:**", round(df[column].mean(), 2))
-            st.write("**Median:**", round(df[column].median(), 2))
-            st.write("**Standard Deviation:**", round(df[column].std(), 2))
-
+            st.metric("Mean", round(df[column].mean(), 2))
+            st.metric("Median", round(df[column].median(), 2))
             st.line_chart(df[column])
-
         else:
-            st.write("Value Counts:")
             st.write(df[column].value_counts())
 
     except Exception as e:
-        st.error("Something went wrong while reading the file.")
+        st.error("Error while processing file")
         st.exception(e)
 
 else:
-    st.info("👆 Please upload a CSV file to get started.")
+    st.info("👆 Please upload a CSV or Excel file")
 
-# --------------------------------------------------
-# FOOTER
-# --------------------------------------------------
 st.markdown("---")
-st.caption("Built with ❤️ using Streamlit")
+st.caption("Built with Streamlit")
+
